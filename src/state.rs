@@ -1,10 +1,5 @@
 use serde::{Serialize, Deserialize};
 
-// #[derive(Serialize, Deserialize)]
-// pub struct State {
-//     pub files: std::cell::RefCell<Vec<StateFile>>
-// }
-
 #[derive(Serialize, Deserialize)]
 pub struct State {
     pub path: std::path::PathBuf,
@@ -38,29 +33,6 @@ impl State {
         }
     }
 }
-
-// impl State {
-//     pub fn new() -> Self {
-//         State {
-//             files: std::cell::RefCell::new(vec![])
-//         }
-//     }
-
-//     pub fn get<'a>(&mut self, log_file: &str) -> Option<&StateFile> {
-
-//         if let Some(state) = self.files.borrow().iter().find(|&current_state| current_state.path == log_file) {
-//             return state.borrow_mut();
-//         } else {
-//             let new_state = StateFile {
-//                 path: String::from(log_file),
-//                 size: 0,
-//                 line_number: 0,
-//             };
-//             self.files.borrow_mut().push(new_state);
-//             return self.files.borrow().last().unwrap()
-//         }
-//     }
-// }
 
 impl StateLoader {
     pub fn new<P: AsRef<std::path::Path>>(path: P) -> Self {
