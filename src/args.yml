@@ -1,0 +1,25 @@
+name: check_logmultiline
+version: 0.0.0
+author: Michael Richter <mr@osor.de>
+about: Checks log files for specific patterns and respects messages with multiple lines
+args:
+  - file:
+    short: f
+    long: file
+    takes_value: true
+    required: true
+    multiple: true
+    help: Log file to analyze
+  - criticalpattern:
+    short: c
+    long: criticalpattern
+    takes_value: true
+    required: true
+    multiple: true
+    help: Regex pattern to trigger a CRITICAL problem
+  - statedir:
+    short: s
+    long: statedir
+    takes_value: true
+    required: true
+    help: Directory to save the processing state in from run to run
