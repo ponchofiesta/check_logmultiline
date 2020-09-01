@@ -44,7 +44,7 @@ fn main() {
             Err(e) => unknown(&format!("Could not check log file: {}", e))
         };
 
-        state.line_number = result.last_line_number + 1;
+        state.line_number = result.last_line_number;
         state.size = result.file_size;
 
         results.push(result);

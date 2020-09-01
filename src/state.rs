@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 pub struct State {
     pub path: std::path::PathBuf,
     pub size: u64,
-    pub line_number: usize,
+    pub line_number: i64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -29,7 +29,7 @@ impl State {
         State {
             path: log_file,
             size: 0,
-            line_number: 0,
+            line_number: -1,
         }
     }
 }

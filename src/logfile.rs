@@ -5,14 +5,14 @@ pub type Pattern = (PatternType, regex::Regex);
 pub struct Matches {
     pub path: std::path::PathBuf,
     pub lines_count: usize,
-    pub last_line_number: usize,
+    pub last_line_number: i64,
     pub file_size: u64,
     pub messages: Vec<Message>,
 }
 
 #[derive(Clone)]
 pub struct Message {
-    pub line_number: usize,
+    pub line_number: i64,
     pub message_type: PatternType,
     pub message: String,
 }
@@ -80,31 +80,37 @@ pub fn find(state: &crate::state::State, line_re: &regex::Regex, patterns: &Vec<
 
     for (index, line) in reader.lines().enumerate() {
 
-        if index < state.line_number {
+        let index = index as i64;
+        if index <= state.line_number {
             continue;
         }
 
+        message.line_number = index;
         let line = line.unwrap();
         
         if line_re.is_match(&line) {
 
             // last message has finished, analyze it
-            for re in patterns {
-                if re.1.is_match(&message.message) {
-                    message.message_type = re.0;
-                    matches.messages.push(message.clone());
-                }
-            }
+            find_in_message(&mut message, patterns, &mut matches);
             
             // new message starts
             message = Message::new();
-            message.line_number = index;
         }
         
         message.message.push_str(&format!("{}\n", line));
         matches.lines_count += 1;
         matches.last_line_number = index;
     }
+    find_in_message(&mut message, patterns, &mut matches);
 
     Ok(matches)
+}
+
+fn find_in_message(message: &mut Message, patterns: &Vec<Pattern>, matches: &mut Matches) {
+    for re in patterns {
+        if re.1.is_match(&message.message) {
+            message.message_type = re.0;
+            matches.messages.push(message.clone());
+        }
+    }
 }
