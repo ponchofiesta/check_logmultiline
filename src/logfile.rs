@@ -2,7 +2,7 @@
  * Copyright (c) 2020 Michael Richter <mr@osor.de>
  */
 
- use std::io::BufRead;
+use std::io::BufRead;
 
 pub type Pattern = (PatternType, regex::Regex);
 
@@ -65,48 +65,66 @@ impl std::fmt::Display for PatternType {
     }
 }
 
-pub fn find(state: &crate::state::State, line_re: &regex::Regex, patterns: &Vec<Pattern>) -> Result<Matches, String> {
+pub fn find(
+    files: &crate::args::Files, 
+    state: &crate::state::State, 
+    line_re: &regex::Regex, 
+    patterns: &Vec<Pattern>) -> Result<Matches, String> {
 
-    let file = match std::fs::File::open(&state.path) {
-        Ok(file) => file,
-        Err(e) => return Err(format!("Could not search in log file: {}", e))
-    };
-    let reader = std::io::BufReader::new(file);
+    // find lasted used log file
+    let mut file_selector = files.iter().len();
+    for (index, file) in files.iter().enumerate() {
+        let created = std::fs::metadata(file).unwrap().created().unwrap();
+        let size = std::fs::metadata(file).unwrap().len();
+        if state.created == created && state.size <= size {
+            file_selector = index;
+            break;
+        }
+    }
 
-    let mut message = Message::new();
     let mut matches = Matches {
         path: state.path.clone(),
         lines_count: 0,
         last_line_number: state.line_number,
-        file_size: std::fs::metadata(&state.path).unwrap().len(),
+        file_size: std::fs::metadata(&files[0]).unwrap().len(),
         messages: vec![]
     };
 
-    for (index, line) in reader.lines().enumerate() {
-
-        let index = index as i64;
-        if index <= state.line_number {
-            continue;
-        }
-
-        message.line_number = index;
-        let line = line.unwrap();
+    // Walk through all log files to current
+    for index in (0..file_selector).rev() {
+        let file = match std::fs::File::open(&files[index]) {
+            Ok(file) => file,
+            Err(e) => return Err(format!("Could not search in log file: {}", e))
+        };
+        let reader = std::io::BufReader::new(file);
+        let mut message = Message::new();
         
-        if line_re.is_match(&line) {
-
-            // last message has finished, analyze it
-            find_in_message(&mut message, patterns, &mut matches);
+        for (index, line) in reader.lines().enumerate() {
+    
+            let index = index as i64;
+            if index <= state.line_number {
+                continue;
+            }
+    
+            message.line_number = index;
+            let line = line.unwrap();
             
-            // new message starts
-            message = Message::new();
+            if line_re.is_match(&line) {
+    
+                // last message has finished, analyze it
+                find_in_message(&mut message, patterns, &mut matches);
+                
+                // new message starts
+                message = Message::new();
+            }
+            
+            message.message.push_str(&format!("{}\n", line));
+            matches.lines_count += 1;
+            matches.last_line_number = index;
         }
-        
-        message.message.push_str(&format!("{}\n", line));
-        matches.lines_count += 1;
-        matches.last_line_number = index;
+        find_in_message(&mut message, patterns, &mut matches);
     }
-    find_in_message(&mut message, patterns, &mut matches);
-
+    
     Ok(matches)
 }
 

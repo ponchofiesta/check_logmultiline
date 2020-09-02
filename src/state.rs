@@ -2,12 +2,13 @@
  * Copyright (c) 2020 Michael Richter <mr@osor.de>
  */
 
- use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct State {
     pub path: std::path::PathBuf,
     pub size: u64,
+    pub created: std::time::SystemTime,
     pub line_number: i64,
 }
 
@@ -33,6 +34,7 @@ impl State {
         State {
             path: log_file,
             size: 0,
+            created: std::time::SystemTime::UNIX_EPOCH,
             line_number: -1,
         }
     }
@@ -52,7 +54,7 @@ impl StateLoader {
             return Ok(StateDoc::new())
         }
         match std::fs::read_to_string(&self.file) {
-            Ok(states_content) => match toml::from_str(&states_content) {
+            Ok(states_content) => match serde_json::from_str(&states_content) {
                 Ok(states) => Ok(states),
                 Err(e) => Err(format!("Could not parse statefile: {}", e))
             },
@@ -60,7 +62,7 @@ impl StateLoader {
         }
     }
     pub fn save(&self, state: &StateDoc) -> Result<(), String> {
-        let content = match toml::to_string(state) {
+        let content = match serde_json::to_string_pretty(state) {
             Ok(content) => content,
             Err(err) => return Err(format!("Could not encode statefile: {}", err))
         };

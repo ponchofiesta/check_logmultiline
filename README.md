@@ -7,7 +7,8 @@ Check_logmultiline searches log files message by message. It saves its state in 
 ## Features
 
 - Multiline log messages (detected by user defined regex pattern)
-- Muliple files
+- Muliple log files
+- Rotating log files
 - Muliple warning and critical patterns
 
 ## Prerequisites
@@ -28,16 +29,26 @@ FLAGS:
 
 OPTIONS:
     -c, --criticalpattern <criticalpattern>...    Regex pattern to trigger a CRITICAL problem
-    -f, --file <file>...                          Log file to analyze
+    -f, --file <file>...
+            Log file to analyze. Append ':<filenamepattern>' to specify rotated files.
+
     -l, --line <linepattern>                      Pattern to detect new lines
     -s, --statefile <statefile>                   File to save the processing state in from run to run
     -w, --warningpattern <warningpattern>...      Regex pattern to trigger a WARNING problem
 ```
 
-For example check for a specific pattern of Java stacktraces in log files:
+### Examples
+
+Check for a specific pattern of Java stacktraces in log files:
 
 ```bash
 check_logmultiline -f /var/log/someapp.log -l '^\[.*?\] [\da-f]{8} ' -c 'java\.lang\.OutOfMemoryError'
+```
+
+Check every line in rotating log files:
+
+```bash
+check_logmultiline -f '/var/log/someapp.log:^someapp\.\d\.log' -c 'java\.lang\.OutOfMemoryError'
 ```
 
 ## Build

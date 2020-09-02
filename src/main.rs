@@ -2,10 +2,11 @@
  * Copyright (c) 2020 Michael Richter <mr@osor.de>
  */
 
- #[macro_use]
+#[macro_use]
 extern crate clap;
 extern crate regex;
 extern crate serde;
+extern crate serde_json;
 extern crate directories;
 
 mod args;
@@ -35,21 +36,22 @@ fn main() {
     let mut results: Vec<logfile::Matches> = vec![];
 
     for file in args.files {
-        let mut state = match statedoc.states.iter_mut().find(|state| state.path == file) {
+        let mut state = match statedoc.states.iter_mut().find(|state| state.path == file[0]) {
             Some(state) => state,
             None => {
-                let state = state::State::new(file);
+                let state = state::State::new(file[0].clone());
                 statedoc.states.push(state);
                 statedoc.states.last_mut().unwrap()
             }
         };
-        let result = match logfile::find(state, &args.line_re, &args.patterns) {
+        let result = match logfile::find(&file, state, &args.line_re, &args.patterns) {
             Ok(result) => result,
             Err(e) => unknown(&format!("Could not check log file: {}", e))
         };
 
         state.line_number = result.last_line_number;
         state.size = result.file_size;
+        state.created = std::fs::metadata(&file[0]).unwrap().created().unwrap();
 
         results.push(result);
     }
@@ -88,6 +90,6 @@ fn main() {
         }
     }
 
-    println!("{}", msg);
+    print!("{}", msg);
     std::process::exit(code as i32);
 }
