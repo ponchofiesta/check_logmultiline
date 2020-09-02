@@ -1,4 +1,8 @@
-#[macro_use]
+/*
+ * Copyright (c) 2020 Michael Richter <mr@osor.de>
+ */
+
+ #[macro_use]
 extern crate clap;
 extern crate regex;
 extern crate serde;

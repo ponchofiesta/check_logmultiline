@@ -1,4 +1,8 @@
-use std::io::BufRead;
+/*
+ * Copyright (c) 2020 Michael Richter <mr@osor.de>
+ */
+
+ use std::io::BufRead;
 
 pub type Pattern = (PatternType, regex::Regex);
 

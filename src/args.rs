@@ -1,4 +1,8 @@
-pub struct Args {
+/*
+ * Copyright (c) 2020 Michael Richter <mr@osor.de>
+ */
+
+ pub struct Args {
     pub files: Vec<std::path::PathBuf>,
     pub line_re: regex::Regex,
     pub patterns: Vec<crate::logfile::Pattern>,

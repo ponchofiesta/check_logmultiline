@@ -1,4 +1,8 @@
-use serde::{Serialize, Deserialize};
+/*
+ * Copyright (c) 2020 Michael Richter <mr@osor.de>
+ */
+
+ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct State {
