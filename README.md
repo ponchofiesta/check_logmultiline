@@ -7,9 +7,9 @@ Check_logmultiline searches log files message by message. It saves its state in 
 ## Features
 
 - Multiline log messages (detected by user defined regex pattern)
-- Muliple log files
+- Multiple log files
 - Rotating log files
-- Muliple warning and critical patterns
+- Multiple warning and critical patterns
 
 ## Prerequisites
 
