@@ -71,7 +71,7 @@ pub fn find(
     line_re: &regex::Regex, 
     patterns: &Vec<Pattern>) -> Result<Matches, String> {
 
-    // find lasted used log file
+    // find last used log file
     let mut file_selector = files.iter().len();
     for (index, file) in files.iter().enumerate() {
         let created = std::fs::metadata(file).unwrap().created().unwrap();
