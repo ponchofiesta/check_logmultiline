@@ -13,7 +13,7 @@ Check_logmultiline searches log files message by message. It saves its state in 
 
 ## Prerequisites
 
-- Nothing
+- glibc >= 2.14 (UNIX; or build on your own to support other versions)
 
 ## Run
 
@@ -53,8 +53,17 @@ check_logmultiline -f '/var/log/someapp.log:^someapp\.\d\.log' -c 'java\.lang\.O
 
 ## Build
 
-You only need Rust edition 2018. And run:
+You only need Rust edition 2018 (version >= 1.31). And run:
 
 ```bash
 cargo build --release
 ```
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0 (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license (LICENSE-MIT or http://opensource.org/licenses/MIT)
+
+at your option.
