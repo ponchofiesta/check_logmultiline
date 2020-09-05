@@ -1,6 +1,6 @@
 [package]
 name = "check_logmultiline"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Michael Richter <mr@osor.de>"]
 edition = "2018"
 
