@@ -91,7 +91,7 @@ pub fn find(
     };
 
     // Walk through all log files to current
-    for index in (0..file_selector).rev() {
+    for index in (0..=file_selector).rev() {
         let file = match std::fs::File::open(&files[index]) {
             Ok(file) => file,
             Err(e) => return Err(format!("Could not search in log file: {}", e))
