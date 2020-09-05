@@ -13,7 +13,7 @@ Check_logmultiline searches log files message by message. It saves its state in 
 
 ## Prerequisites
 
-- glibc >= 2.14 (UNIX; or build on your own to support other versions)
+- glibc >= 2.18 (Linux; or build on your own to support other versions)
 
 ## Run
 
