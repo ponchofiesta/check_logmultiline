@@ -13,7 +13,13 @@ Check_logmultiline searches log files message by message. It saves its state in 
 
 ## Prerequisites
 
-- glibc >= 2.18 (Linux; or build on your own to support other versions)
+### Linux
+
+The provides executable for Linux is a static build and has no dependencies. THus it should run on all Linux versions.
+
+### Windows and macOS
+
+Other builds are not fully static. You might need a more recent version of these OSs.
 
 ## Run
 
