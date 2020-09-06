@@ -46,7 +46,6 @@ jobs:
       if: matrix.os == 'ubuntu-18.04'
       run: rustup target add x86_64-unknown-linux-musl
     - name: Build
-      if: matrix.os == 'ubuntu-18.04'
       run: ${{ matrix.build }}
     - name: Pack
       run: ${{ matrix.pack }}
