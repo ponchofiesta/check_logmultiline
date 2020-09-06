@@ -26,7 +26,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-18.04
-            pack: tar czf ${{ needs.pre.outputs.artifact_name }}-${{ needs.pre.outputs.version }}-linux.tar.gz target/release/${{ needs.pre.outputs.artifact_name }}
+            pack: tar czf ${{ needs.pre.outputs.artifact_name }}-${{ needs.pre.outputs.version }}-linux.tar.gz target/x86_64-unknown-linux-musl/release/${{ needs.pre.outputs.artifact_name }}
             asset_name: ${{ needs.pre.outputs.artifact_name }}-${{ needs.pre.outputs.version }}-linux.tar.gz
             asset_content_type: application/gzip
             build: cargo build --release --locked --target x86_64-unknown-linux-musl
