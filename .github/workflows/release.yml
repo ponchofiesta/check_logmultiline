@@ -42,7 +42,8 @@ jobs:
     - name: Build
       uses: juankaram/rust-musl-action@master
       if: matrix.os == 'ubuntu-18.04'
-      run: cargo build --release --locked --target x86_64-unknown-linux-musl
+      with: 
+        args: cargo build --release --locked --target x86_64-unknown-linux-musl
     - name: Build
       if: matrix.os != 'ubuntu-18.04'
       run: cargo build --release --locked
