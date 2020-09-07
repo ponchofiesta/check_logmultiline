@@ -7,7 +7,7 @@
 use std::io::BufRead;
 
 /// A tuple containing the type of the pattern and the pattern.
-pub type Pattern = (PatternType, regex::Regex);
+pub type Pattern = (ProblemType, regex::Regex);
 
 /// The struct contains the informations about matches in a log file.
 pub struct Matches {
@@ -36,7 +36,7 @@ pub struct Message {
     pub line_number: i64,
 
     /// Type of pattern found.
-    pub message_type: PatternType,
+    pub message_type: ProblemType,
 
     /// The message string.
     pub message: String,
@@ -44,7 +44,7 @@ pub struct Message {
 
 /// The type of pattern or problem.
 #[derive(Debug, Clone, PartialEq, Copy)]
-pub enum PatternType {
+pub enum ProblemType {
     OK = 0,
     WARNING = 1,
     CRITICAL = 2,
@@ -77,13 +77,13 @@ impl Message {
     pub fn new() -> Self {
         Message {
             line_number: 0,
-            message_type: PatternType::UNKNOWN,
+            message_type: ProblemType::UNKNOWN,
             message: String::new(),
         }
     }
 }
 
-impl std::fmt::Display for PatternType {
+impl std::fmt::Display for ProblemType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }

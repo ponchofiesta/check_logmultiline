@@ -22,8 +22,8 @@ static RESULT_NAME: &str = "LOGFILES";
 /// # Arguments
 /// * `msg` - The status message to be printed out
 fn unknown(msg: &str) -> ! {
-    println!("{} {:?}: {}", RESULT_NAME, crate::logfile::PatternType::UNKNOWN, msg);
-    std::process::exit(crate::logfile::PatternType::UNKNOWN as i32);
+    println!("{} {:?}: {}", RESULT_NAME, crate::logfile::ProblemType::UNKNOWN, msg);
+    std::process::exit(crate::logfile::ProblemType::UNKNOWN as i32);
 }
 
 fn main() {
@@ -76,11 +76,11 @@ fn main() {
     };
  
     // Check results
-    let mut code = logfile::PatternType::OK;
-    if results.iter().any(|result| result.messages.iter().any(|message| message.message_type == crate::logfile::PatternType::CRITICAL)) {
-        code = logfile::PatternType::CRITICAL;
-    } else if results.iter().any(|result| result.messages.iter().any(|message| message.message_type == crate::logfile::PatternType::WARNING)) {
-        code = logfile::PatternType::WARNING;
+    let mut code = logfile::ProblemType::OK;
+    if results.iter().any(|result| result.messages.iter().any(|message| message.message_type == crate::logfile::ProblemType::CRITICAL)) {
+        code = logfile::ProblemType::CRITICAL;
+    } else if results.iter().any(|result| result.messages.iter().any(|message| message.message_type == crate::logfile::ProblemType::WARNING)) {
+        code = logfile::ProblemType::WARNING;
     }
 
     // Generate output message for results
@@ -90,12 +90,12 @@ fn main() {
     msg.push_str(&format!("{} warnings and {} criticals in {} lines of {} files\n", 
         results.iter().fold(0, 
             |count, matches| count + matches.messages.iter().filter(
-                |message| message.message_type == crate::logfile::PatternType::WARNING
+                |message| message.message_type == crate::logfile::ProblemType::WARNING
             ).count()
         ),
         results.iter().fold(0, 
             |count, matches| count + matches.messages.iter().filter(
-                |message| message.message_type == crate::logfile::PatternType::CRITICAL
+                |message| message.message_type == crate::logfile::ProblemType::CRITICAL
             ).count()
         ),
         results.iter().fold(0, |count, matches| count + matches.lines_count),

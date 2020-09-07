@@ -99,7 +99,7 @@ impl Args {
         };
         for pattern in warningpatterns {
             match regex::Regex::new(pattern) {
-                Ok(re) => patterns.push((crate::logfile::PatternType::WARNING, re)),
+                Ok(re) => patterns.push((crate::logfile::ProblemType::WARNING, re)),
                 Err(e) => return Err(format!("Invalid warning pattern: {}", e)),
             };
         }
@@ -111,7 +111,7 @@ impl Args {
         };
         for pattern in criticalpatterns {
             match regex::Regex::new(pattern) {
-                Ok(re) => patterns.push((crate::logfile::PatternType::CRITICAL, re)),
+                Ok(re) => patterns.push((crate::logfile::ProblemType::CRITICAL, re)),
                 Err(e) => return Err(format!("Invalid critical pattern: {}", e)),
             };
         }
