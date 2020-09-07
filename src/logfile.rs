@@ -4,14 +4,18 @@
 
 //! Analyze log files.
 
-use std::io::BufRead;
+use crate::args::Files;
+use crate::state::State;
+use regex::Regex;
+use std::fmt::{Display, Formatter};
+use std::fs::{metadata, File};
+use std::io::{BufRead, BufReader};
 
 /// A tuple containing the type of the pattern and the pattern.
-pub type Pattern = (ProblemType, regex::Regex);
+pub type Pattern = (ProblemType, Regex);
 
 /// The struct contains the informations about matches in a log file.
 pub struct Matches {
-
     /// Path to the log file.
     pub path: std::path::PathBuf,
 
@@ -31,7 +35,6 @@ pub struct Matches {
 /// A multiline message from a log file.
 #[derive(Clone)]
 pub struct Message {
-
     /// The line number the message started in.
     pub line_number: i64,
 
@@ -51,8 +54,8 @@ pub enum ProblemType {
     UNKNOWN = 3,
 }
 
-impl std::fmt::Display for Matches {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for Matches {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut output = String::new();
 
         output.push_str(&format!("File: {}\n", self.path.to_str().unwrap()));
@@ -65,14 +68,17 @@ impl std::fmt::Display for Matches {
     }
 }
 
-impl std::fmt::Display for Message {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({}): {}", self.message_type, self.line_number, self.message)
+impl Display for Message {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}({}): {}",
+            self.message_type, self.line_number, self.message
+        )
     }
 }
 
 impl Message {
-
     /// Create a new default Message.
     pub fn new() -> Self {
         Message {
@@ -83,8 +89,8 @@ impl Message {
     }
 }
 
-impl std::fmt::Display for ProblemType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for ProblemType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -96,16 +102,16 @@ impl std::fmt::Display for ProblemType {
 /// * `line_re` - The line pattern to determine message starts
 /// * `patterns` - Patterns to search for in the log files
 pub fn find(
-    files: &crate::args::Files, 
-    state: &crate::state::State, 
-    line_re: &regex::Regex, 
-    patterns: &Vec<Pattern>) -> Result<Matches, String> {
-
+    files: &Files,
+    state: &State,
+    line_re: &Regex,
+    patterns: &Vec<Pattern>,
+) -> Result<Matches, String> {
     // Find last used log file
     let mut file_selector = files.iter().len();
     for (index, file) in files.iter().enumerate() {
-        let created = std::fs::metadata(file).unwrap().created().unwrap();
-        let size = std::fs::metadata(file).unwrap().len();
+        let created = metadata(file).unwrap().created().unwrap();
+        let size = metadata(file).unwrap().len();
         if state.created == created && state.size <= size {
             file_selector = index;
             break;
@@ -116,47 +122,39 @@ pub fn find(
         path: state.path.clone(),
         lines_count: 0,
         last_line_number: state.line_number,
-        file_size: std::fs::metadata(&files[0]).unwrap().len(),
-        messages: vec![]
+        file_size: metadata(&files[0]).unwrap().len(),
+        messages: vec![],
     };
 
     // Walk through all log files to current
     for index in (0..=file_selector).rev() {
-        let file = match std::fs::File::open(&files[index]) {
+        let file = match File::open(&files[index]) {
             Ok(file) => file,
-            Err(e) => return Err(format!("Could not search in log file: {}", e))
+            Err(e) => return Err(format!("Could not search in log file: {}", e)),
         };
-        let reader = std::io::BufReader::new(file);
+        let reader = BufReader::new(file);
         let mut message = Message::new();
-        
         for (index, line) in reader.lines().enumerate() {
-    
             let index = index as i64;
 
             // Skip to first unseen line
             if index <= state.line_number {
                 continue;
             }
-    
             message.line_number = index;
             let line = line.unwrap();
-            
             if line_re.is_match(&line) {
-    
                 // last message has finished, analyze it
                 find_in_message(&mut message, patterns, &mut matches);
-                
                 // new message starts
                 message = Message::new();
             }
-            
             message.message.push_str(&format!("{}\n", line));
             matches.lines_count += 1;
             matches.last_line_number = index;
         }
         find_in_message(&mut message, patterns, &mut matches);
     }
-    
     Ok(matches)
 }
 
