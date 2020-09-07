@@ -2,18 +2,32 @@
  * Copyright (c) 2020 Michael Richter <mr@osor.de>
  */
 
+//! Parse and validate command line arguments.
+
+/// Processed and transformed command line arguments.
 pub struct Args {
+    /// List of log file sets.
     pub files: Vec<Files>,
+
+    /// Regular expression pattern to determine a message start.
     pub line_re: regex::Regex,
+
+    /// List of regular expressions to search for.
     pub patterns: Vec<crate::logfile::Pattern>,
+
+    /// The path to the state file.
     pub state_path: std::path::PathBuf,
 }
 
+/// A file set containing the main log file with index 0 and possible rotated log files following ordered by its creating date.
 pub type Files = Vec<std::path::PathBuf>;
 
+// A list of tuples containing the log file path and the corresponding file creation date.
 type FilesCreated = Vec<(std::path::PathBuf, std::time::SystemTime)>;
 
 impl Args {
+
+    /// Parse, validate and transform the command line arguments.
     pub fn parse() -> Result<Self, String> {
 
         let args = clap_app!(app => 
@@ -32,11 +46,14 @@ impl Args {
         let files_arg: Vec<&str> = args.values_of("file").unwrap().collect();
         let mut all_files: Vec<Files> = vec![];
         for file_arg in files_arg {
+
+            // Split file argument to get the path and a pattern for rotated file names
             let file_parts: Vec<&str> = file_arg.splitn(2, ':').collect();
             let path = std::path::PathBuf::from(file_parts[0]);
             let created = std::fs::metadata(path.as_path()).unwrap().created().unwrap();
             let mut files: FilesCreated = vec![(path, created)];
 
+            // Search for rotated log files
             if file_parts.iter().len() > 1 {
                 let pattern = match regex::Regex::new(file_parts[1]) {
                     Ok(pattern) => pattern,

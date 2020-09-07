@@ -2,25 +2,47 @@
  * Copyright (c) 2020 Michael Richter <mr@osor.de>
  */
 
+//! Analyze log files.
+
 use std::io::BufRead;
 
+/// A tuple containing the type of the pattern and the pattern.
 pub type Pattern = (PatternType, regex::Regex);
 
+/// The struct contains the informations about matches in a log file.
 pub struct Matches {
+
+    /// Path to the log file.
     pub path: std::path::PathBuf,
+
+    /// The count of lines that has been analyzed.
     pub lines_count: usize,
+
+    /// Last line number that has been analyzed.
     pub last_line_number: i64,
+
+    /// Size of the log file.
     pub file_size: u64,
+
+    /// Matching messages.
     pub messages: Vec<Message>,
 }
 
+/// A multiline message from a log file.
 #[derive(Clone)]
 pub struct Message {
+
+    /// The line number the message started in.
     pub line_number: i64,
+
+    /// Type of pattern found.
     pub message_type: PatternType,
+
+    /// The message string.
     pub message: String,
 }
 
+/// The type of pattern or problem.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum PatternType {
     OK = 0,
@@ -50,6 +72,8 @@ impl std::fmt::Display for Message {
 }
 
 impl Message {
+
+    /// Create a new default Message.
     pub fn new() -> Self {
         Message {
             line_number: 0,
@@ -65,13 +89,19 @@ impl std::fmt::Display for PatternType {
     }
 }
 
+/// Search the log file set for specific patterns and return the matches.
+/// # Arguments
+/// * `files` - A file set of log files to be searched through
+/// * `state` - The state of the log file
+/// * `line_re` - The line pattern to determine message starts
+/// * `patterns` - Patterns to search for in the log files
 pub fn find(
     files: &crate::args::Files, 
     state: &crate::state::State, 
     line_re: &regex::Regex, 
     patterns: &Vec<Pattern>) -> Result<Matches, String> {
 
-    // find last used log file
+    // Find last used log file
     let mut file_selector = files.iter().len();
     for (index, file) in files.iter().enumerate() {
         let created = std::fs::metadata(file).unwrap().created().unwrap();
@@ -102,6 +132,8 @@ pub fn find(
         for (index, line) in reader.lines().enumerate() {
     
             let index = index as i64;
+
+            // Skip to first unseen line
             if index <= state.line_number {
                 continue;
             }
@@ -128,6 +160,11 @@ pub fn find(
     Ok(matches)
 }
 
+/// Search patterns in single message.
+/// # Arguments
+/// * `message` - The message to search through
+/// * `patterns` - Patterns to search for in the message
+/// * `line_re` - Store matching messages in this struct
 fn find_in_message(message: &mut Message, patterns: &Vec<Pattern>, matches: &mut Matches) {
     for re in patterns {
         if re.1.is_match(&message.message) {
