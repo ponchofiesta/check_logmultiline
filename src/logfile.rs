@@ -68,6 +68,38 @@ impl Display for Matches {
     }
 }
 
+impl Matches {
+    /// Tests if any message is CRITICAL.
+    pub fn any_critical(&self) -> bool {
+        self.messages
+            .iter()
+            .any(|message| message.message_type == ProblemType::CRITICAL)
+    }
+
+    /// Tests if any message is WARNING.
+    pub fn any_warning(&self) -> bool {
+        self.messages
+            .iter()
+            .any(|message| message.message_type == ProblemType::WARNING)
+    }
+
+    /// Counts the CRITICAL messages.
+    pub fn count_critical(&self) -> usize {
+        self.messages
+            .iter()
+            .filter(|message| message.message_type == ProblemType::CRITICAL)
+            .count()
+    }
+
+    /// Counts the WARNING messages.
+    pub fn count_warning(&self) -> usize {
+        self.messages
+            .iter()
+            .filter(|message| message.message_type == ProblemType::WARNING)
+            .count()
+    }
+}
+
 impl Display for Message {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(

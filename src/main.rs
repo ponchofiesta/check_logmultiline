@@ -84,18 +84,8 @@ fn main() {
     };
 
     // Check results and set status code
-    let is_critical = results.iter().any(|result| {
-        result
-            .messages
-            .iter()
-            .any(|message| message.message_type == ProblemType::CRITICAL)
-    });
-    let is_warning = results.iter().any(|result| {
-        result
-            .messages
-            .iter()
-            .any(|message| message.message_type == ProblemType::WARNING)
-    });
+    let is_critical = results.iter().any(|result| result.any_critical());
+    let is_warning = results.iter().any(|result| result.any_warning());
 
     let code = if is_critical {
         ProblemType::CRITICAL
@@ -109,22 +99,12 @@ fn main() {
     let mut msg = String::from(RESULT_NAME);
     msg.push_str(&format!(" {}: ", code));
 
-    let warnings_count = results.iter().fold(0, |count, matches| {
-        count
-            + matches
-                .messages
-                .iter()
-                .filter(|message| message.message_type == ProblemType::WARNING)
-                .count()
-    });
-    let criticals_count = results.iter().fold(0, |count, matches| {
-        count
-            + matches
-                .messages
-                .iter()
-                .filter(|message| message.message_type == ProblemType::CRITICAL)
-                .count()
-    });
+    let warnings_count = results
+        .iter()
+        .fold(0, |count, matches| count + matches.count_warning());
+    let criticals_count = results
+        .iter()
+        .fold(0, |count, matches| count + matches.count_critical());
     let lines_count = results
         .iter()
         .fold(0, |count, matches| count + matches.lines_count);
