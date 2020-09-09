@@ -73,3 +73,5 @@ Licensed under either of
 - MIT license (LICENSE-MIT or http://opensource.org/licenses/MIT)
 
 at your option.
+
+This complies with the license terms of Rust and all dependencies used here.
