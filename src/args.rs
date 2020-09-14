@@ -37,10 +37,10 @@ type FilesCreated = Vec<(PathBuf, SystemTime)>;
 impl Args {
     /// Parse, validate and transform the command line arguments.
     pub fn parse() -> Result<Self, String> {
-        let args = clap_app!(app => (name: crate_name!())
-            (version: crate_version!())
-            (author: crate_authors!())
-            (about: "Checks log files for specific patterns and respects messages with multiple lines")
+        let args = clap_app!(app => (name: env!("CARGO_PKG_NAME"))
+            (version: env!("CARGO_PKG_VERSION"))
+            (author: env!("CARGO_PKG_AUTHORS"))
+            (about: env!("CARGO_PKG_DESCRIPTION"))
             (@arg file: -f --file +takes_value +required +multiple "Log file to analyze. Append ':<filenamepattern>' to specify rotated files.")
             (@arg linepattern: -l --line +takes_value "Pattern to detect new lines")
             (@arg warningpattern: -w --warningpattern +takes_value +multiple "Regex pattern to trigger a WARNING problem")

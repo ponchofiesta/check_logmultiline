@@ -1,8 +1,11 @@
 [package]
 name = "check_logmultiline"
+description = "Checks log files for specific patterns and respects messages with multiple lines"
 version = "0.1.1"
 authors = ["Michael Richter <mr@osor.de>"]
 edition = "2018"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 clap = "2.33"
