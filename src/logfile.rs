@@ -160,10 +160,8 @@ pub fn find(
 
     // Walk through all log files to current
     for index in (0..=file_selector).rev() {
-        let file = match File::open(&files[index]) {
-            Ok(file) => file,
-            Err(e) => return Err(format!("Could not search in log file: {}", e)),
-        };
+        let file = File::open(&files[index])
+            .map_err(|e| format!("Could not search in log file: {}", e))?;
         let reader = BufReader::new(file);
         let mut message = Message::new();
         for (index, line) in reader.lines().enumerate() {

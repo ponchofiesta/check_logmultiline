@@ -88,13 +88,11 @@ impl StateLoader {
     /// # Arguments
     /// * `state` - State to be saved
     pub fn save(&self, state: &StateDoc) -> Result<(), String> {
-        let content = match serde_json::to_string_pretty(state) {
-            Ok(content) => content,
-            Err(err) => return Err(format!("Could not encode statefile: {}", err)),
-        };
+        let content = serde_json::to_string_pretty(state)
+            .map_err(|e| format!("Could not encode statefile: {}", e))?;
         match write(&self.file, content) {
             Ok(_) => Ok(()),
-            Err(err) => Err(format!("Could not save statefile: {}", err)),
+            Err(e) => Err(format!("Could not save statefile: {}", e)),
         }
     }
 }

@@ -60,14 +60,13 @@ impl Args {
 
             // Search for rotated log files
             if file_parts.iter().len() > 1 {
-                let pattern = match Regex::new(file_parts[1]) {
-                    Ok(pattern) => pattern,
-                    Err(e) => return Err(format!("Invalid rotate log file pattern: {}", e)),
-                };
-                let parent_dir = match files[0].0.parent() {
-                    Some(dir) => dir.to_path_buf(),
-                    None => return Err(String::from("Log file path has no parent directory")),
-                };
+                let pattern = Regex::new(file_parts[1])
+                    .map_err(|e| format!("Invalid rotate log file pattern: {}", e))?;
+                let parent_dir = files[0]
+                    .0
+                    .parent()
+                    .ok_or(String::from("Log file path has no parent directory"))?
+                    .to_path_buf();
                 if parent_dir.is_dir() {
                     for entry in read_dir(parent_dir.as_path()).unwrap() {
                         let filename = entry.unwrap().file_name().into_string().unwrap();
@@ -90,18 +89,13 @@ impl Args {
 
         // linepattern
         let linepattern = args.value_of("linepattern").unwrap_or("");
-        let line_re = match Regex::new(linepattern) {
-            Ok(re) => re,
-            Err(e) => return Err(format!("Invalid line pattern: {}", e)),
-        };
+        let line_re =
+            Regex::new(linepattern).map_err(|e| format!("Invalid line pattern: {}", e))?;
 
         // warningpattern
         let mut patterns: Vec<Pattern> = vec![];
 
-        let warningpatterns: Vec<_> = match args.values_of("warningpattern") {
-            Some(values) => values.collect(),
-            None => vec![],
-        };
+        let warningpatterns: Vec<_> = args.values_of("warningpattern").unwrap_or(vec![]).collect();
         for pattern in warningpatterns {
             match Regex::new(pattern) {
                 Ok(re) => patterns.push((ProblemType::WARNING, re)),
@@ -110,10 +104,10 @@ impl Args {
         }
 
         // criticalpattern
-        let criticalpatterns: Vec<_> = match args.values_of("criticalpattern") {
-            Some(values) => values.collect(),
-            None => vec![],
-        };
+        let criticalpatterns: Vec<_> = args
+            .values_of("criticalpattern")
+            .unwrap_or(vec![])
+            .collect();
         for pattern in criticalpatterns {
             match Regex::new(pattern) {
                 Ok(re) => patterns.push((ProblemType::CRITICAL, re)),
