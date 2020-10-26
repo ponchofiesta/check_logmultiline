@@ -34,7 +34,7 @@ fn unknown(msg: &str) -> ! {
 
 fn main() {
     // Parse and validate command line arguments
-    let args = match Args::parse() {
+    let args = match Args::get() {
         Ok(args) => args,
         Err(e) => unknown(&format!("Could not parse command line arguments: {}", e)),
     };
