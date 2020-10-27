@@ -130,11 +130,11 @@ impl Args {
         // statefile
         let statepath = match args.value_of("statefile") {
             Some(value) => PathBuf::from(value),
-            None => match ProjectDirs::from("de", "osor", crate_name!()) {
+            None => match ProjectDirs::from("de", "osor", env!("CARGO_PKG_NAME")) {
                 Some(proj) => proj.data_dir().to_path_buf(),
                 None => {
                     let mut statepath = temp_dir();
-                    statepath.push(format!("{}_state.json", crate_name!()));
+                    statepath.push(format!("{}_state.json", env!("CARGO_PKG_NAME")));
                     statepath
                 }
             },
