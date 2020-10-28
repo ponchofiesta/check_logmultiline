@@ -8,8 +8,7 @@ use crate::logfile::{Pattern, ProblemType};
 use directories::ProjectDirs;
 use regex::Regex;
 use std::env::temp_dir;
-use std::fs::metadata;
-use std::fs::read_dir;
+use std::fs::{metadata, read_dir};
 use std::path::PathBuf;
 use std::time::SystemTime;
 
@@ -26,6 +25,9 @@ pub struct Args {
 
     /// The path to the state file.
     pub state_path: PathBuf,
+
+    /// Keep WARNING and CRITICAL status for this amount of seconds.
+    pub keep_status: i64,
 }
 
 /// A file set containing the main log file with index 0 and possible rotated log files following ordered by its creating date.
@@ -46,6 +48,7 @@ impl Args {
             (@arg warningpattern: -w --warningpattern +takes_value +multiple "Regex pattern to trigger a WARNING problem")
             (@arg criticalpattern: -c --criticalpattern +takes_value +multiple "Regex pattern to trigger a CRITICAL problem")
             (@arg statefile: -s --statefile +takes_value "File to save the processing state in from run to run")
+            (@arg keepstatus: -k --keepstatus +takes_value "Remember WARNINGs and CRITICALs for this duration")
         ).get_matches();
 
         // file
@@ -140,11 +143,38 @@ impl Args {
             },
         };
 
+        // keepstatus
+        let keepstatus_errstr =
+            "Value for keepstatus has invalid format. Use 'NUMBER' or 'NUMBER[smhd]'.";
+        let keepstatus: i64 = match args.value_of("keepstatus") {
+            Some(value) => {
+                let re = Regex::new("^([0-9]+)([smhd]?)$")
+                    .map_err(|e| format!("Could not validate value as duration: {}", e))?;
+                match re.captures(value) {
+                    Some(caps) => {
+                        let raw = caps.get(1).ok_or(keepstatus_errstr)?.as_str();
+                        let unit = caps.get(2).ok_or(keepstatus_errstr)?.as_str();
+                        let seconds: i64 = raw.parse().unwrap();
+                        match unit {
+                            "" | "s" => seconds,
+                            "m" => seconds * 60,
+                            "h" => seconds * 60 * 60,
+                            "d" => seconds * 60 * 60 * 24,
+                            _ => return Err(keepstatus_errstr.into()),
+                        }
+                    }
+                    None => return Err(keepstatus_errstr.into()),
+                }
+            }
+            None => 0,
+        };
+
         Ok(Args {
             files: all_files,
             line_re: line_re,
             patterns: patterns,
             state_path: PathBuf::from(statepath),
+            keep_status: keepstatus,
         })
     }
 }

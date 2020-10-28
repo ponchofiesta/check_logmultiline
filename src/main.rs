@@ -6,7 +6,9 @@
 
 #[macro_use]
 extern crate clap;
+extern crate chrono;
 extern crate directories;
+extern crate fs2;
 extern crate regex;
 extern crate serde;
 extern crate serde_json;
@@ -16,7 +18,8 @@ mod logfile;
 mod state;
 
 use args::Args;
-use logfile::{find, Matches, ProblemType};
+use chrono::{prelude::*, Duration};
+use logfile::{find, Match, ProblemType};
 use state::{State, StateLoader};
 use std::fs::metadata;
 use std::process::exit;
@@ -40,16 +43,16 @@ fn main() {
     };
 
     // Get state of log file searches
-    let state_loader = StateLoader::new(args.state_path);
+    let mut state_loader = StateLoader::new(args.state_path.as_path());
     let mut statedoc = match state_loader.load() {
         Ok(states) => states,
         Err(e) => unknown(&format!("Could not load state: {}", e)),
     };
 
-    let mut results: Vec<Matches> = vec![];
+    let mut matches: Vec<Match> = vec![];
 
     // Iterate through log files
-    for file in args.files {
+    for file in &args.files {
         // Get the state of the current log file
         let mut state = match statedoc
             .states
@@ -65,31 +68,67 @@ fn main() {
         };
 
         // Search the log file for defined patterns
-        let result = match find(&file, state, &args.line_re, &args.patterns) {
+        let mut matchh = match find(&file, state, &args.line_re, &args.patterns) {
             Ok(result) => result,
             Err(e) => unknown(&format!("Could not check log file: {}", e)),
         };
 
-        // Save results
-        state.line_number = result.last_line_number;
-        state.size = result.file_size;
-        state.created = metadata(&file[0]).unwrap().created().unwrap();
+        // Clean up expired kept messages
+        let now = Utc::now();
+        state.kept_matches.retain(|matchh| matchh.keep_until >= now);
 
-        results.push(result);
+        // Keep messages in state
+        if args.keep_status > 0 && matchh.messages.iter().len() > 0 {
+            matchh.keep_until = now + Duration::seconds(args.keep_status);
+            state.kept_matches.push(matchh.clone());
+        }
+
+        // Fill up state
+        state.line_number = matchh.last_line_number;
+        state.size = matchh.file_size;
+        state.created = match metadata(&file[0]) {
+            Ok(metadata) => match metadata.created() {
+                Ok(created) => created,
+                Err(e) => unknown(&format!(
+                    "Could not get metadata of file {:?}: {}",
+                    &file[0], e
+                )),
+            },
+            Err(e) => unknown(&format!(
+                "Could not get metadata of file {:?}: {}",
+                &file[0], e
+            )),
+        };
+
+        matches.push(matchh);
     }
 
-    // Save new log file state
+    // Save log file state
     if let Err(e) = state_loader.save(&statedoc) {
         unknown(&format!("Could not save state file: {}", e));
     };
+    if let Err(e) = state_loader.close_file() {
+        unknown(&format!("Could not close state file: {}", e));
+    }
 
-    // Check results and set status code
-    let is_critical = results.iter().any(|result| result.any_critical());
-    let is_warning = results.iter().any(|result| result.any_warning());
+    // Check kept messages
+    let kept_matches: Vec<&Match> = statedoc
+        .states
+        .iter()
+        .filter(|state| args.files.iter().any(|file| state.path == file[0]))
+        .map(|state| &state.kept_matches)
+        .flatten()
+        .collect();
+    let is_kept_critical = kept_matches.iter().any(|matches| matches.any_critical());
+    let is_kept_warning = kept_matches.iter().any(|matches| matches.any_warning());
 
-    let code = if is_critical {
+    // Check current results and set status code
+    let is_critical = matches.iter().any(|matchh| matchh.any_critical());
+    let is_warning = matches.iter().any(|matchh| matchh.any_warning());
+
+    let code = if is_critical || is_kept_critical {
         ProblemType::CRITICAL
-    } else if is_warning {
+    } else if is_warning || is_kept_warning {
         ProblemType::WARNING
     } else {
         ProblemType::OK
@@ -99,25 +138,43 @@ fn main() {
     let mut msg = String::from(RESULT_NAME);
     msg.push_str(&format!(" {}: ", code));
 
-    let warnings_count = results
+    // Get summary infomations
+    let kept_warnings_count = kept_matches
         .iter()
-        .fold(0, |count, matches| count + matches.count_warning());
-    let criticals_count = results
+        .fold(0, |count, matchh| count + matchh.count_warning());
+    let kept_criticals_count = kept_matches
         .iter()
-        .fold(0, |count, matches| count + matches.count_critical());
-    let lines_count = results
+        .fold(0, |count, matchh| count + matchh.count_critical());
+
+    let warnings_count = matches
         .iter()
-        .fold(0, |count, matches| count + matches.lines_count);
-    let files_count = results.iter().len();
+        .fold(0, |count, matchh| count + matchh.count_warning());
+    let criticals_count = matches
+        .iter()
+        .fold(0, |count, matchh| count + matchh.count_critical());
+    let lines_count = matches
+        .iter()
+        .fold(0, |count, matchh| count + matchh.lines_count);
+    let files_count = matches.iter().len();
 
     msg.push_str(&format!(
-        "{} warnings and {} criticals in {} lines of {} files\n",
-        warnings_count, criticals_count, lines_count, files_count
+        "{} criticals and {} warnings - new: {} criticals and {} warnings in {} lines of {} files\n",
+        kept_criticals_count, kept_warnings_count, criticals_count, warnings_count, lines_count, files_count
     ));
 
-    for matches in results.iter() {
-        if matches.messages.len() > 0 {
-            msg.push_str(&matches.to_string());
+    // Print messages
+    // Kept messages contains new messages here too
+    if args.keep_status > 0 {
+        for matches in kept_matches.iter() {
+            if matches.messages.len() > 0 {
+                msg.push_str(&matches.to_string());
+            }
+        }
+    } else {
+        for matches in matches.iter() {
+            if matches.messages.len() > 0 {
+                msg.push_str(&matches.to_string());
+            }
         }
     }
 
