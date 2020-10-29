@@ -131,7 +131,10 @@ impl StateLoader {
     pub fn close_file(&mut self) -> Result<(), String> {
         let file = self.open_file()?;
         match file.unlock() {
-            Ok(()) => Ok(()),
+            Ok(()) => {
+                self.file = None;
+                Ok(())
+            }
             Err(_) => Err(String::from("Could not unlock state file.")),
         }
     }
