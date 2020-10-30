@@ -16,7 +16,7 @@ Check_logmultiline searches log files message by message. It saves its state in 
 
 ### Linux
 
-The provides executable for Linux is a static build and has no dependencies. THus it should run on all Linux versions.
+The provides executable for Linux is a static build and has no dependencies. Thus it should run on all Linux versions.
 
 ### Windows and macOS
 
