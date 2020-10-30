@@ -10,6 +10,7 @@ Check_logmultiline searches log files message by message. It saves its state in 
 - Multiple log files
 - Rotating log files
 - Multiple warning and critical patterns
+- Keep messages and its status for user defined duration
 
 ## Prerequisites
 
@@ -38,6 +39,7 @@ OPTIONS:
     -f, --file <file>...
             Log file to analyze. Append ':<filenamepattern>' to specify rotated files.
 
+    -k, --keepstatus <keepstatus>                 Remember WARNINGs and CRITICALs for this duration
     -l, --line <linepattern>                      Pattern to detect new lines
     -s, --statefile <statefile>                   File to save the processing state in from run to run
     -w, --warningpattern <warningpattern>...      Regex pattern to trigger a WARNING problem
