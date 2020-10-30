@@ -178,7 +178,13 @@ fn main() {
         }
     }
 
+    // Performance data
+    msg.push_str(&format!(
+        "|critical={} warning={} lines={}",
+        criticals_count, warnings_count, lines_count
+    ));
+
     // Print output message and exit
-    print!("{}", msg);
+    println!("{}", msg.trim());
     exit(code as i32);
 }
