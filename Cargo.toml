@@ -1,7 +1,7 @@
 [package]
 name = "check_logmultiline"
 description = "Checks log files for specific patterns and respects messages with multiple lines"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Michael Richter <mr@osor.de>"]
 edition = "2018"
 readme = "README.md"
