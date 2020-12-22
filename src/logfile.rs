@@ -208,3 +208,35 @@ fn find_in_message(message: &mut Message, patterns: &Vec<Pattern>, matches: &mut
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test() {
+        // given
+        let mut message = Message {
+            line_number: 1,
+            message_type: ProblemType::OK,
+            message: "abc 123".into(),
+        };
+        let patterns = vec![(ProblemType::CRITICAL, Regex::new(r"123").unwrap())];
+        let mut matches = Match {
+            path: std::path::PathBuf::new(),
+            lines_count: 0,
+            last_line_number: 1,
+            file_size: 123,
+            messages: vec![],
+            keep_until: Utc::now(),
+        };
+        
+        // when
+        find_in_message(&mut message, &patterns, &mut matches);
+
+        // then
+        assert_eq!(message.message_type, ProblemType::CRITICAL);
+        assert_eq!(matches.messages.len(), 1);
+    }
+}
