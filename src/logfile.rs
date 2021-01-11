@@ -6,12 +6,14 @@
 
 use crate::args::Files;
 use crate::state::State;
+use chrono::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::fs::{metadata, File};
 use std::io::{BufRead, BufReader};
-use chrono::prelude::*;
+use std::path::Path;
+use std::time::SystemTime;
 
 /// A tuple containing the type of the pattern and the pattern.
 pub type Pattern = (ProblemType, Regex);
@@ -146,14 +148,13 @@ pub fn find(
     patterns: &Vec<Pattern>,
 ) -> Result<Match, String> {
     // Find last used log file
-    let mut file_selector = files.iter().len();
+    let mut file_selector = files.iter().len() - 1;
     for (index, file) in files.iter().enumerate() {
-        let created = metadata(file).unwrap().created().unwrap();
-        let size = metadata(file).unwrap().len();
-        if state.created == created && state.size <= size {
-            file_selector = index;
+        let file_time = file_modified(file.as_path())?;
+        if state.modified >= file_time {
             break;
         }
+        file_selector = index;
     }
 
     let mut matches = Match {
@@ -166,20 +167,21 @@ pub fn find(
     };
 
     // Walk through all log files to current
-    for index in (0..=file_selector).rev() {
-        let file = File::open(&files[index])
+    for file_index in (0..=file_selector).rev() {
+        let file = File::open(&files[file_index])
             .map_err(|e| format!("Could not search in log file: {}", e))?;
         let reader = BufReader::new(file);
         let mut message = Message::new();
-        for (index, line) in reader.lines().enumerate() {
-            let index = index as i64;
+        let mut iterator = reader.lines().enumerate();
+        while let Some((line_index, Ok(line))) = iterator.next() {
+
+            let line_index = line_index as i64;
 
             // Skip to first unseen line
-            if index <= state.line_number {
+            if line_index <= state.line_number {
                 continue;
             }
-            message.line_number = index;
-            let line = line.unwrap();
+            message.line_number = line_index;
             if line_re.is_match(&line) {
                 // last message has finished, analyze it
                 find_in_message(&mut message, patterns, &mut matches);
@@ -188,7 +190,7 @@ pub fn find(
             }
             message.message.push_str(&format!("{}\n", line));
             matches.lines_count += 1;
-            matches.last_line_number = index;
+            matches.last_line_number = line_index;
         }
         find_in_message(&mut message, patterns, &mut matches);
     }
@@ -207,6 +209,17 @@ fn find_in_message(message: &mut Message, patterns: &Vec<Pattern>, matches: &mut
             matches.messages.push(message.clone());
         }
     }
+}
+
+/// Get file modified time.
+/// # Arguments
+/// * `path` - The file path to get time from
+pub fn file_modified(path: &Path) -> Result<SystemTime, String> {
+    let file_time = metadata(path)
+        .map_err(|e| format!("Could not get file metadata: {}", e))?
+        .modified()
+        .map_err(|e| format!("Could not get modified date: {}", e))?;
+    Ok(file_time)
 }
 
 #[cfg(test)]
@@ -231,7 +244,6 @@ mod tests {
             messages: vec![],
             keep_until: Utc::now(),
         };
-        
         // when
         find_in_message(&mut message, &patterns, &mut matches);
 

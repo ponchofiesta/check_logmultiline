@@ -4,11 +4,11 @@
 
 //! Parse and validate command line arguments.
 
-use crate::logfile::{Pattern, ProblemType};
+use crate::logfile::{Pattern, ProblemType, file_modified};
 use directories::ProjectDirs;
 use regex::Regex;
 use std::env::temp_dir;
-use std::fs::{metadata, read_dir};
+use std::fs::read_dir;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
@@ -34,7 +34,7 @@ pub struct Args {
 pub type Files = Vec<PathBuf>;
 
 // A list of tuples containing the log file path and the corresponding file creation date.
-type FilesCreated = Vec<(PathBuf, SystemTime)>;
+type FilesTime = Vec<(PathBuf, SystemTime)>;
 
 impl Args {
     /// Parse, validate and transform the command line arguments.
@@ -43,7 +43,7 @@ impl Args {
             (version: env!("CARGO_PKG_VERSION"))
             (author: env!("CARGO_PKG_AUTHORS"))
             (about: env!("CARGO_PKG_DESCRIPTION"))
-            (@arg file: -f --file +takes_value +required +multiple "Log file to analyze. Append ':<filenamepattern>' to specify rotated files.")
+            (@arg file: -f --file +takes_value +required +multiple "Log file to analyze. Append '#<rotatenamepattern>' to specify rotated files.")
             (@arg linepattern: -l --line +takes_value "Pattern to detect new lines")
             (@arg warningpattern: -w --warningpattern +takes_value +multiple "Regex pattern to trigger a WARNING problem")
             (@arg criticalpattern: -c --criticalpattern +takes_value +multiple "Regex pattern to trigger a CRITICAL problem")
@@ -59,13 +59,10 @@ impl Args {
         let mut all_files: Vec<Files> = vec![];
         for file_arg in files_arg {
             // Split file argument to get the path and a pattern for rotated file names
-            let file_parts: Vec<&str> = file_arg.splitn(2, ':').collect();
+            let file_parts: Vec<&str> = file_arg.splitn(2, '#').collect();
             let path = PathBuf::from(file_parts[0]);
-            let created = metadata(path.as_path())
-                .map_err(|e| format!("Could not get file metadata: {}", e))?
-                .created()
-                .map_err(|e| format!("Could not get creation date: {}", e))?;
-            let mut files: FilesCreated = vec![(path, created)];
+            let file_time = file_modified(path.as_path())?;
+            let mut files: FilesTime = vec![(path, file_time)];
 
             // Search for rotated log files
             if file_parts.iter().len() > 1 {
@@ -87,11 +84,8 @@ impl Args {
                             .map_err(|_| format!("Could not convert directory entry filename."))?;
                         if pattern.is_match(&filename) {
                             let path = parent_dir.join(filename);
-                            let created = metadata(path.as_path())
-                                .map_err(|e| format!("Could not get file metadata: {}", e))?
-                                .created()
-                                .map_err(|e| format!("Could not get creation date: {}", e))?;
-                            files.push((path, created));
+                            let file_time = file_modified(path.as_path())?;
+                            files.push((path, file_time));
                         }
                     }
                 }
@@ -133,14 +127,16 @@ impl Args {
         // statefile
         let statepath = match args.value_of("statefile") {
             Some(value) => PathBuf::from(value),
-            None => match ProjectDirs::from("de", "osor", env!("CARGO_PKG_NAME")) {
-                Some(proj) => proj.data_dir().to_path_buf(),
-                None => {
-                    let mut statepath = temp_dir();
+            None => {
+                let statefilepath = |mut statepath: PathBuf| {
                     statepath.push(format!("{}_state.json", env!("CARGO_PKG_NAME")));
                     statepath
+                };
+                match ProjectDirs::from("de", "osor", env!("CARGO_PKG_NAME")) {
+                    Some(proj) => statefilepath(proj.data_dir().to_path_buf()),
+                    None => statefilepath(temp_dir()),
                 }
-            },
+            }
         };
 
         // keepstatus
