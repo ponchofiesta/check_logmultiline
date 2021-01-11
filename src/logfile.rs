@@ -6,12 +6,14 @@
 
 use crate::args::Files;
 use crate::state::State;
+use chrono::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::fs::{metadata, File};
 use std::io::{BufRead, BufReader};
-use chrono::prelude::*;
+use std::path::Path;
+use std::time::SystemTime;
 
 /// A tuple containing the type of the pattern and the pattern.
 pub type Pattern = (ProblemType, Regex);
@@ -148,9 +150,9 @@ pub fn find(
     // Find last used log file
     let mut file_selector = files.iter().len();
     for (index, file) in files.iter().enumerate() {
-        let created = metadata(file).unwrap().created().unwrap();
+        let file_time = file_modified(file.as_path());
         let size = metadata(file).unwrap().len();
-        if state.created == created && state.size <= size {
+        if state.modified == file_time && state.size <= size {
             file_selector = index;
             break;
         }
@@ -209,6 +211,17 @@ fn find_in_message(message: &mut Message, patterns: &Vec<Pattern>, matches: &mut
     }
 }
 
+/// Get file modified time.
+/// # Arguments
+/// * `path` - The file path to get time from
+pub fn file_modified(path: &Path) -> Result<SystemTime, String> {
+    let file_time = metadata(path)
+        .map_err(|e| format!("Could not get file metadata: {}", e))?
+        .modified()
+        .map_err(|e| format!("Could not get modified date: {}", e))?;
+    Ok(file_time)
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -231,7 +244,6 @@ mod tests {
             messages: vec![],
             keep_until: Utc::now(),
         };
-        
         // when
         find_in_message(&mut message, &patterns, &mut matches);
 

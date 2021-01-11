@@ -7,6 +7,7 @@
 use crate::logfile::Match;
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
+use std::fs::create_dir_all;
 use std::fs::{File, OpenOptions};
 use std::io::{prelude::*, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
@@ -24,7 +25,7 @@ pub struct State {
 
     /// Creation date of the log file.
     #[serde(default = "SystemTime::now")]
-    pub created: SystemTime,
+    pub modified: SystemTime,
 
     /// Last analyzed line number of the log file.
     #[serde(default)]
@@ -56,6 +57,14 @@ pub struct StateDoc {
     pub states: Vec<State>,
 }
 
+impl StateDoc {
+    pub fn new() -> Self {
+        Self {
+            states: vec![]
+        }
+    }
+}
+
 /// Save or load a log file state to or from file.
 pub struct StateLoader {
     /// The path to the state file.
@@ -85,6 +94,9 @@ impl StateLoader {
         let mut content = String::new();
         file.read_to_string(&mut content)
             .map_err(|e| format!("Could not read state file: {}", e))?;
+        if content.len() == 0 {
+            return Ok(StateDoc::new());
+        }
         match serde_json::from_str(&content) {
             Ok(states) => Ok(states),
             Err(e) => Err(format!("Could not parse state file: {}", e)),
@@ -112,12 +124,16 @@ impl StateLoader {
     fn open_file(&mut self) -> Result<&mut File, String> {
         match self.file.as_ref() {
             None => {
+                let dir = self.path.parent()
+                    .ok_or(format!("No parent dir for state file '{}'", self.path.to_string_lossy()))?;
+                create_dir_all(dir)
+                    .map_err(|e| format!("Could not create state file parent directory '{}': {}", self.path.to_string_lossy(), e))?;
                 let file = OpenOptions::new()
                     .read(true)
                     .write(true)
                     .create(true)
                     .open(self.path.as_path())
-                    .map_err(|e| format!("Could not open state file: {}", e))?;
+                    .map_err(|e| format!("Could not open state file '{}': {}", self.path.to_string_lossy(), e))?;
                 file.lock_exclusive()
                     .map_err(|e| format!("Could not lock state file: {}", e))?;
                 self.file = Some(file);

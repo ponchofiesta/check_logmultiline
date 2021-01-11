@@ -19,7 +19,7 @@ mod state;
 
 use args::Args;
 use chrono::{prelude::*, Duration};
-use logfile::{find, Match, ProblemType};
+use logfile::{find, Match, ProblemType, file_modified};
 use state::{State, StateLoader};
 use std::fs::metadata;
 use std::process::exit;
@@ -86,19 +86,7 @@ fn main() {
         // Fill up state
         state.line_number = matchh.last_line_number;
         state.size = matchh.file_size;
-        state.created = match metadata(&file[0]) {
-            Ok(metadata) => match metadata.created() {
-                Ok(created) => created,
-                Err(e) => unknown(&format!(
-                    "Could not get metadata of file {:?}: {}",
-                    &file[0], e
-                )),
-            },
-            Err(e) => unknown(&format!(
-                "Could not get metadata of file {:?}: {}",
-                &file[0], e
-            )),
-        };
+        state.modified = file_modified(file[0].as_path());
 
         matches.push(matchh);
     }
