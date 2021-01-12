@@ -21,7 +21,6 @@ use args::Args;
 use chrono::{prelude::*, Duration};
 use logfile::{find, Match, ProblemType, file_modified};
 use state::{State, StateLoader};
-use std::fs::metadata;
 use std::process::exit;
 
 /// The name of this check printed for result output.
@@ -86,7 +85,10 @@ fn main() {
         // Fill up state
         state.line_number = matchh.last_line_number;
         state.size = matchh.file_size;
-        state.modified = file_modified(file[0].as_path());
+        state.modified = match file_modified(file[0].as_path()) {
+            Ok(value) => value,
+            Err(e) => unknown(&e),
+        };
 
         matches.push(matchh);
     }

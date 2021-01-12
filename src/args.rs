@@ -8,8 +8,8 @@ use crate::logfile::{Pattern, ProblemType, file_modified};
 use directories::ProjectDirs;
 use regex::Regex;
 use std::env::temp_dir;
-use std::fs::{metadata, read_dir};
-use std::path::{Path, PathBuf};
+use std::fs::read_dir;
+use std::path::PathBuf;
 use std::time::SystemTime;
 
 /// Processed and transformed command line arguments.

@@ -42,7 +42,7 @@ impl State {
         State {
             path: log_file,
             size: 0,
-            created: SystemTime::UNIX_EPOCH,
+            modified: SystemTime::UNIX_EPOCH,
             line_number: -1,
             kept_matches: vec![],
         }
@@ -126,8 +126,10 @@ impl StateLoader {
             None => {
                 let dir = self.path.parent()
                     .ok_or(format!("No parent dir for state file '{}'", self.path.to_string_lossy()))?;
-                create_dir_all(dir)
-                    .map_err(|e| format!("Could not create state file parent directory '{}': {}", self.path.to_string_lossy(), e))?;
+                if !dir.exists() {
+                    create_dir_all(dir)
+                        .map_err(|e| format!("Could not create state file parent directory '{}': {}", self.path.to_string_lossy(), e))?;
+                }
                 let file = OpenOptions::new()
                     .read(true)
                     .write(true)
