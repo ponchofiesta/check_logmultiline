@@ -59,6 +59,37 @@ Check every line in rotating log files:
 check_logmultiline -f '/var/log/someapp.log:^someapp\.\d\.log' -c 'java\.lang\.OutOfMemoryError'
 ```
 
+### Icinga 2
+
+To use it in Icinga 2 you have to define a new command like this:
+
+```
+object CheckCommand "logmultiline" {
+  command = [ "/opt/check_logmultiline" ]
+  arguments = {
+    "-f" = {
+      value = "$logmultiline_file$"
+      required = true
+    }
+    "-l" = {
+      value = "$logmultiline_line$"
+    }
+    "-k" = {
+      value = "$logmultiline_keepstatus$"
+    }
+    "-s" = {
+      value = "$logmultiline_statefile$"
+    }
+    "-w" = {
+      value = "$logmultiline_warningpattern$"
+    }
+    "-c" = {
+      value = "$logmultiline_criticalpattern$"
+    }
+  }
+}
+```
+
 ## Build
 
 You only need Rust edition 2018 (version >= 1.31). And run:
